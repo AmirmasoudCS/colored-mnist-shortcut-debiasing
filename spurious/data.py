@@ -15,11 +15,10 @@ def load_mnist(root="./data"):
     """Return (x_train, y_train, x_test, y_test).
 
     x_*: uint8 tensors (N, 28, 28);  y_*: int64 tensors (N,)
-    Hint: datasets.MNIST(root, train=True/False, download=True) and its
-          .data / .targets attributes. No ToTensor() and no loop needed.
     """
-    # TODO
-    raise NotImplementedError
+    train = datasets.MNIST(root, train=True, download=True)
+    test = datasets.MNIST(root, train=False, download=True)
+    return train.data, train.targets, test.data, test.targets
 
 
 def colorize(gray, y, rho, seed):
@@ -27,16 +26,27 @@ def colorize(gray, y, rho, seed):
 
     gray: uint8 (N, 28, 28), y: int64 (N,)
     Returns: x uint8 (N, 3, 28, 28), y (N,), c int64 (N,)  with c in {0, 1}
-
-    Plan:
-      1. natural colour per sample from y              (no loops)
-      2. keep = rand(N) < rho, using a seeded torch.Generator
-      3. c = natural where keep, else the opposite colour
-      4. x = zeros(N, 3, 28, 28, dtype=torch.uint8); paste each digit into
-         channel 0 (red) or channel 1 (green) with boolean masks
     """
-    # TODO
-    raise NotImplementedError
+    gray, y = gray.cpu(), y.cpu()
+    n = gray.shape[0]
+
+    # 1. natural colour of every sample: 0-4 -> 0 (red), 5-9 -> 1 (green)
+    natural = (y >= 5).long()
+
+    # 2. keep the natural colour with probability rho (seeded, reproducible)
+    gen = torch.Generator().manual_seed(seed)
+    keep = torch.rand(n, generator=gen) < rho
+
+    # 3. final colour: natural where keep, the opposite colour elsewhere
+    c = torch.where(keep, natural, 1 - natural)
+
+    # 4. paste each digit into exactly one channel (0 = red, 1 = green)
+    x = torch.zeros(n, 3, 28, 28, dtype=torch.uint8)
+    for color in (0, 1):
+        mask = c == color
+        x[mask, color] = gray[mask]
+
+    return x, y.clone(), c
 
 
 def build_datasets(root="./data", seed=DATA_SEED):
@@ -44,10 +54,25 @@ def build_datasets(root="./data", seed=DATA_SEED):
     'train' (50k, rho .9), 'val' (10k, rho .9),
     'test_id' (10k, rho .9), 'test_ood1' (10k, rho .5), 'test_ood2' (10k, rho .1)
 
-    Train/val: split the 60k MNIST *training* digits with a seeded randperm.
-    Test sets: decide how to handle the handout's bug (MNIST has only 10k test
-    digits) -- we agreed to discuss the plan before coding this part.
-    Use a different colouring seed for every set.
+    Train/val: the 60k MNIST *training* digits are split 50k/10k with a seeded
+    randperm, so the two sets contain different digits.
+
+    Test sets: MNIST has only 10,000 test digits, so the handout's slicing
+    (test_indices[10000:20000], [20000:30000]) would give EMPTY sets. We re-use the
+    same 10,000 held-out test digits three times with different colourings
+    (rho = 0.9 / 0.5 / 0.1). They never overlap with train/val digits, so there is
+    no data leakage; the three test sets simply share their shapes.
     """
-    # TODO (do this last, after colorize passes the checks)
-    raise NotImplementedError
+    x_tr, y_tr, x_te, y_te = load_mnist(root)
+
+    gen = torch.Generator().manual_seed(seed)
+    perm = torch.randperm(x_tr.shape[0], generator=gen)
+    tr_idx, val_idx = perm[:50000], perm[50000:]
+
+    return {
+        "train": colorize(x_tr[tr_idx], y_tr[tr_idx], 0.9, seed),
+        "val": colorize(x_tr[val_idx], y_tr[val_idx], 0.9, seed + 1),
+        "test_id": colorize(x_te, y_te, 0.9, seed + 2),
+        "test_ood1": colorize(x_te, y_te, 0.5, seed + 3),
+        "test_ood2": colorize(x_te, y_te, 0.1, seed + 4),
+    }
