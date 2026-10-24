@@ -76,3 +76,21 @@ def build_datasets(root="./data", seed=DATA_SEED):
         "test_ood1": colorize(x_te, y_te, 0.5, seed + 3),
         "test_ood2": colorize(x_te, y_te, 0.1, seed + 4),
     }
+
+
+def batches(split, bs, shuffle=False, device=None, generator=None):
+    """Yield (x, y, c) mini-batches from a (x, y, c) split.
+
+    x is converted from uint8 to float32 in [0, 1] here, batch by batch, so the
+    full dataset can stay in memory as uint8 (4x smaller).
+    `generator` makes the shuffling reproducible.
+    """
+    x, y, c = split
+    n = y.shape[0]
+    order = torch.randperm(n, generator=generator) if shuffle else torch.arange(n)
+    for i in range(0, n, bs):
+        idx = order[i:i + bs]
+        xb, yb, cb = x[idx].float().div(255.0), y[idx], c[idx]
+        if device is not None:
+            xb, yb, cb = xb.to(device), yb.to(device), cb.to(device)
+        yield xb, yb, cb
