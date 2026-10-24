@@ -34,7 +34,3 @@ Validation accuracy was already 97.71% after epoch 1 and plateaued at about 99.2
   on the OOD sets (Task 2).
 - **Caveat:** the final epoch (99.33%) is reported, not the best validation epoch (epoch 16,
   99.45%), to avoid selecting on validation data.
-
-## Next
-
-Task 2: evaluate the saved baseline on the five sets (train, validation, ID test, OOD-1, OOD-2).
