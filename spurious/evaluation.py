@@ -7,18 +7,24 @@ GROUP_NAMES = ["red/0-4", "red/5-9", "green/0-4", "green/5-9"]  # group = 2*colo
 
 
 @torch.no_grad()
-def predict_logits(model, split, device, bs=2000):
-    """Logits (on CPU) for every sample of a (x, y, c) split. Model is set to eval mode."""
+def predict_logits(model, split, device, bs=2000, transform=None):
+    """Logits (on CPU) for every sample of a (x, y, c) split. Model is set to eval mode.
+
+    transform: optional function (x, y, c) -> x applied to every float batch before the
+    model sees it (used for the counterfactual tests).
+    """
     model.eval()
     outs = []
-    for xb, _, _ in batches(split, bs, shuffle=False, device=device):
+    for xb, yb, cb in batches(split, bs, shuffle=False, device=device):
+        if transform is not None:
+            xb = transform(xb, yb, cb)
         outs.append(model(xb).cpu())
     return torch.cat(outs)
 
 
-def evaluate(model, split, device, bs=2000):
+def evaluate(model, split, device, bs=2000, transform=None):
     """Return (mean cross-entropy loss, accuracy) on a (x, y, c) split."""
-    logits = predict_logits(model, split, device, bs)
+    logits = predict_logits(model, split, device, bs, transform)
     y = split[1].cpu()
     return F.cross_entropy(logits, y).item(), (logits.argmax(dim=1) == y).float().mean().item()
 
