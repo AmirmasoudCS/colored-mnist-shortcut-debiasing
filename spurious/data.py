@@ -49,19 +49,22 @@ def colorize(gray, y, rho, seed):
     return x, y.clone(), c
 
 
-def build_datasets(root="./data", seed=DATA_SEED):
+def build_datasets(root="./data", seed=DATA_SEED, rho=0.9):
     """Return a dict of (x, y, c) tuples with keys:
-    'train' (50k, rho .9), 'val' (10k, rho .9),
-    'test_id' (10k, rho .9), 'test_ood1' (10k, rho .5), 'test_ood2' (10k, rho .1)
+    'train' (50k), 'val' (10k), 'test_id' (10k)       -> all use correlation strength `rho`
+    'test_ood1' (10k, rho 0.5), 'test_ood2' (10k, rho 0.1)   -> fixed, whatever `rho` is
+
+    Keeping the two OOD sets fixed makes results comparable across experiments.
+    rho = 0.9 (default) reproduces exactly the datasets of Steps 1-3.
 
     Train/val: the 60k MNIST *training* digits are split 50k/10k with a seeded
     randperm, so the two sets contain different digits.
 
     Test sets: MNIST has only 10,000 test digits, so the handout's slicing
     (test_indices[10000:20000], [20000:30000]) would give EMPTY sets. We re-use the
-    same 10,000 held-out test digits three times with different colourings
-    (rho = 0.9 / 0.5 / 0.1). They never overlap with train/val digits, so there is
-    no data leakage; the three test sets simply share their shapes.
+    same 10,000 held-out test digits three times with different colourings. They never
+    overlap with train/val digits, so there is no data leakage; the three test sets
+    simply share their shapes.
     """
     x_tr, y_tr, x_te, y_te = load_mnist(root)
 
@@ -70,9 +73,9 @@ def build_datasets(root="./data", seed=DATA_SEED):
     tr_idx, val_idx = perm[:50000], perm[50000:]
 
     return {
-        "train": colorize(x_tr[tr_idx], y_tr[tr_idx], 0.9, seed),
-        "val": colorize(x_tr[val_idx], y_tr[val_idx], 0.9, seed + 1),
-        "test_id": colorize(x_te, y_te, 0.9, seed + 2),
+        "train": colorize(x_tr[tr_idx], y_tr[tr_idx], rho, seed),
+        "val": colorize(x_tr[val_idx], y_tr[val_idx], rho, seed + 1),
+        "test_id": colorize(x_te, y_te, rho, seed + 2),
         "test_ood1": colorize(x_te, y_te, 0.5, seed + 3),
         "test_ood2": colorize(x_te, y_te, 0.1, seed + 4),
     }
