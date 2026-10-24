@@ -81,8 +81,3 @@ Task 1-2 result; this one is an extension.
 - Only two values of rho were tried, so this shows a contrast, not a dose-response curve.
 - The final epoch is reported (a small dip in train accuracy at epoch 20, from 99.93% to 99.80%,
   is within normal Adam noise).
-
-## Next
-
-Task 3 (cue detection: colour reversal, grayscale, saliency, Grad-CAM, misspecification) on both
-baselines; then mitigation methods on rho = 0.99 with several seeds.
