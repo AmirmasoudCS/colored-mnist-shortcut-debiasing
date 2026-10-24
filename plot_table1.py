@@ -1,9 +1,10 @@
 """Figure for the Task 2 results (reads the JSON written by task2_evaluate.py).
 
 Run from the repo root (needs only matplotlib):
-    python -m plot_table1
+    python -m plot_table1                       # rho 0.9, seed 0
+    python -m plot_table1 --rho 0.99 --seed 0
 
-Output: reports/figures/table1_baseline_eval.png
+Output: reports/figures/table1_baseline_eval{tag}_seed{S}.png (tag = '' for rho 0.9, '_rho0.99' otherwise)
 Panels: (a) accuracy per set: overall / aligned / conflicting samples (95% binomial CI)
         (b) accuracy of the four colour/digit groups on the three test sets
         (c) cross-entropy loss per set
@@ -21,8 +22,14 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 SETS = ["train", "val", "test_id", "test_ood1", "test_ood2"]
-LABELS = {"train": "train\n(rho 0.9)", "val": "val\n(rho 0.9)", "test_id": "ID test\n(rho 0.9)",
-          "test_ood1": "OOD-1\n(rho 0.5)", "test_ood2": "OOD-2\n(rho 0.1)"}
+
+
+def make_labels(rho):
+    return {"train": f"train\n(rho {rho:g})", "val": f"val\n(rho {rho:g})",
+            "test_id": f"ID test\n(rho {rho:g})", "test_ood1": "OOD-1\n(rho 0.5)",
+            "test_ood2": "OOD-2\n(rho 0.1)"}
+
+
 GROUPS = ["red/0-4", "red/5-9", "green/0-4", "green/5-9"]
 GROUP_STYLE = {  # colour = digit colour, marker shape = digit range, filled = aligned
     "red/0-4": ("#d62728", "o", True), "red/5-9": ("#d62728", "s", False),
@@ -35,10 +42,17 @@ def ci95(p, n):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--results", default="./outputs/results/baseline_eval_seed0.json")
-    ap.add_argument("--out", default="./reports/figures/table1_baseline_eval.png")
-    ap.add_argument("--title", default="Baseline CNN (seed 0)")
+    ap.add_argument("--rho", type=float, default=0.9)
+    ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--results", default=None)
+    ap.add_argument("--out", default=None)
+    ap.add_argument("--title", default=None)
     a = ap.parse_args()
+    tag = "" if abs(a.rho - 0.9) < 1e-9 else f"_rho{a.rho:g}"
+    a.results = a.results or f"./outputs/results/baseline_eval{tag}_seed{a.seed}.json"
+    a.out = a.out or f"./reports/figures/table1_baseline_eval{tag}_seed{a.seed}.png"
+    a.title = a.title or f"Baseline CNN (rho {a.rho:g}, seed {a.seed})"
+    labels = make_labels(a.rho)
     with open(a.results) as f:
         res = json.load(f)
 
@@ -70,7 +84,7 @@ def main():
         ax[0].errorbar([i + off for i in x], vals, yerr=errs, fmt=marker, color=color, capsize=3,
                        markersize=9 if marker == "_" else 6, label=label)
     ax[0].set_xticks(x)
-    ax[0].set_xticklabels([LABELS[s] for s in SETS], fontsize=8)
+    ax[0].set_xticklabels([labels[s] for s in SETS], fontsize=8)
     ax[0].set_ylabel("accuracy (%)")
     ax[0].set_title(f"(a) Accuracy by sample type\n(y-axis starts at {lo}%; bars = 95% CI)", fontsize=10)
 
@@ -84,7 +98,7 @@ def main():
                    markerfacecolor=color if filled else "white", markersize=8,
                    label=f"{g} ({kind})")
     ax[1].set_xticks(range(len(tests)))
-    ax[1].set_xticklabels([LABELS[s] for s in tests], fontsize=8)
+    ax[1].set_xticklabels([labels[s] for s in tests], fontsize=8)
     ax[1].set_title(f"(b) Accuracy by group\n(y-axis starts at {lo}%)", fontsize=10)
 
     for k in (0, 1):
@@ -99,7 +113,7 @@ def main():
     for b, v in zip(bars, losses):
         ax[2].text(b.get_x() + b.get_width() / 2, v, f"{v:.3f}", ha="center", va="bottom", fontsize=8)
     ax[2].set_xticks(x)
-    ax[2].set_xticklabels([LABELS[s] for s in SETS], fontsize=8)
+    ax[2].set_xticklabels([labels[s] for s in SETS], fontsize=8)
     ax[2].set_ylabel("cross-entropy loss")
     ax[2].set_ylim(0, max(losses) * 1.15)
     ax[2].set_title("(c) Loss (y-axis from 0)", fontsize=10)
