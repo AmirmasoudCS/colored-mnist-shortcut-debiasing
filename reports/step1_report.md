@@ -1,10 +1,5 @@
 # Step 1 Report: Colored MNIST dataset
 
-**Project:** Detecting and mitigating spurious correlations in image classification
-**Course:** Trustworthy Machine Learning, practical project (weeks 1-2)
-**Date:** 24 October 2026
-**Files:** `spurious/data.py`, `step1_check_data.py`
-
 ## 1. Goal
 
 Build the Colored MNIST dataset ourselves, as the handout requires, so that the strength of the
@@ -111,16 +106,3 @@ digits 5-9 appear green, as intended.*
 - Of the 50,000 training images, about 5,000 are *conflicting* (colour opposite to the natural one).
   A model can therefore learn shape from them, so the baseline's OOD drop may be smaller than
   the handout predicts. We will report what is measured.
-
-## 6. Reproduce
-
-```bash
-pip install -r requirements.txt
-python -m step1_check_data      # prints the checks, writes reports/figures/check_samples.png
-```
-
-## 7. Next step
-
-**Step 2 - baseline model and training:** `SimpleCNN` (split into `features()` / `head()` for
-Grad-CAM later), an `evaluate` function, and the training script (Adam, lr 1e-3, batch 64,
-20 epochs) with loss and accuracy curves and saved weights `baseline_model.pth`.
