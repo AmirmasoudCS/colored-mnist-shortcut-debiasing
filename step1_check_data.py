@@ -1,5 +1,7 @@
 """Step 1 sanity checks. Run from the repo root:  python step1_check_data.py
 Every check prints something you can verify by eye."""
+import os
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -7,6 +9,8 @@ import matplotlib.pyplot as plt  # noqa: E402
 import torch  # noqa: E402
 
 from spurious.data import build_datasets, colorize, load_mnist  # noqa: E402
+
+FIG_DIR = "reports/figures"  # figures used by the step reports live here
 
 
 def natural_fraction(y, c):
@@ -50,8 +54,10 @@ def main():
         ax.set_title(f"label {int(y[i])}", fontsize=9)
         ax.axis("off")
     fig.tight_layout()
-    fig.savefig("check_samples.png", dpi=130)
-    print("\nsaved check_samples.png")
+    os.makedirs(FIG_DIR, exist_ok=True)
+    out_path = os.path.join(FIG_DIR, "check_samples.png")
+    fig.savefig(out_path, dpi=130)
+    print(f"\nsaved {out_path}")
 
     # --- Piece 4: the five splits ------------------------------------------
     data = build_datasets("./data")
