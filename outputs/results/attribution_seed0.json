@@ -1,0 +1,16 @@
+{
+  "natural": {
+    "accuracy": 0.9899999499320984,
+    "digit_area_fraction": 0.16776785254478455,
+    "gradcam_mass_on_digit": 0.25140371918678284,
+    "gradient_mass_on_digit": 0.3548269271850586,
+    "gradient_share_own_colour_channel": 0.5423598289489746
+  },
+  "reversed": {
+    "accuracy": 1.0,
+    "digit_area_fraction": 0.16776785254478455,
+    "gradcam_mass_on_digit": 0.23292450606822968,
+    "gradient_mass_on_digit": 0.3499282896518707,
+    "gradient_share_own_colour_channel": 0.5309937000274658
+  }
+}
