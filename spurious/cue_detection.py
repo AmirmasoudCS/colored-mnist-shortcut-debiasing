@@ -10,7 +10,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import torch  # noqa: E402
 
-from .evaluation import evaluate  # noqa: E402
+from .evaluation import evaluate, predict_logits  # noqa: E402
 
 
 def set_color(x, c):
@@ -209,3 +209,33 @@ def plot_attribution(maps_by_cond, cols, saliency_path, gradcam_path, title):
         cam_labels += [f"{cond}: image", f"{cond}: Grad-CAM"]
     _plot_grid(sal_rows, sal_labels, sal_titles, saliency_path, f"Saliency - {title}")
     _plot_grid(cam_rows, cam_labels, cam_titles, gradcam_path, f"Grad-CAM - {title}")
+
+
+# =====================================================================
+# Variant: what drives the WRONG answer on colour-flipped digits?
+# =====================================================================
+def find_flips(model, split, device):
+    """Digits classified correctly in their natural colour but wrongly when the colour is
+    reversed ("colour-flipped"). Returns (bool mask, pred natural, pred reversed)."""
+    y = split[1]
+    pred_nat = predict_logits(model, split, device, transform=natural_color).argmax(dim=1)
+    pred_rev = predict_logits(model, split, device, transform=anti_color).argmax(dim=1)
+    flipped = (pred_nat == y) & (pred_rev != y)
+    return flipped, pred_nat, pred_rev
+
+
+def plot_flips(nat, rev_true, rev_wrong, y, wrong, path, title):
+    """6 rows x n columns. nat / rev_true / rev_wrong are `attribute` outputs for the same
+    digits: natural colour explaining the true class, reversed colour explaining the true
+    class, reversed colour explaining the (wrong) predicted class."""
+    cols = range(len(y))
+    ov = lambda m: [_overlay(m["img"][i], m["cam"][i]) for i in cols]       # noqa: E731
+    pick = lambda m, k: [m[k][i] for i in cols]                              # noqa: E731
+    rows = [(pick(nat, "img"), None), (ov(nat), None),
+            (pick(rev_true, "img"), None), (ov(rev_true), None),
+            (ov(rev_wrong), None), (pick(rev_wrong, "gxi"), "hot")]
+    labels = ["natural: image", "natural: Grad-CAM\n(true class)",
+              "reversed: image", "reversed: Grad-CAM\n(true class)",
+              "reversed: Grad-CAM\n(wrong class \u0177)", "reversed: Grad\u00d7Input\n(wrong class \u0177)"]
+    titles = {0: [f"true {y[i]}" for i in cols], 4: [f"\u0177 = {wrong[i]}" for i in cols]}
+    _plot_grid(rows, labels, titles, path, title)
