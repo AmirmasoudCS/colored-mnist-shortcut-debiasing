@@ -20,8 +20,9 @@ import os
 
 import torch
 
-from spurious.cue_detection import (anti_color, attribute, find_flips, natural_color,
-                                    plot_flips)
+from spurious.cue_detection import (anti_color, attribute, find_flips, grayscale_max,
+                                    natural_color, plot_flips)
+from spurious.evaluation import predict_logits
 from spurious.data import build_datasets
 from spurious.models import SimpleCNN
 from spurious.utils import ensure_dir, get_device, model_name, rho_tag, save_json
@@ -66,6 +67,14 @@ def main():
 
     wrong_all, y_f = pred_rev[flipped], y_all[flipped]
     res["wrong_answer_crosses_boundary"] = ((wrong_all >= 5) != (y_f >= 5)).float().mean().item()
+    # control: errors the same model makes on colour-free (grayscale) images. Ordinary
+    # look-alike confusions (4/9, 3/5, 2/7 ...) also straddle the 0-4 / 5-9 boundary, so a
+    # high crossing rate alone is not proof of colour influence.
+    pred_gray = predict_logits(model, test, device, transform=grayscale_max).argmax(dim=1)
+    err = pred_gray != y_all
+    res["control_gray_errors"] = {
+        "n_errors": int(err.sum()),
+        "crosses_boundary": ((pred_gray[err] >= 5) != (y_all[err] >= 5)).float().mean().item()}
     pair = torch.bincount(y_f * 10 + wrong_all, minlength=100)
     top = torch.topk(pair.float(), 5)
     res["top_confusions"] = [{"true": int(i) // 10, "predicted": int(i) % 10, "count": int(c)}
@@ -106,7 +115,10 @@ def main():
         r = res[name]
         L.append(f"| {label} | {r['flipped']} | {r['natural_correct']} | {100 * r['rate']:.2f} |")
     L += ["", f"Wrong answer crosses the 0-4 / 5-9 boundary (follows the colour): "
-          f"{100 * res['wrong_answer_crosses_boundary']:.1f}% (about 55.6% if the wrong class were random).", "",
+          f"{100 * res['wrong_answer_crosses_boundary']:.1f}%.", "",
+          f"Control: among the {res['control_gray_errors']['n_errors']} errors this model makes on colour-free "
+          f"(grayscale) images, {100 * res['control_gray_errors']['crosses_boundary']:.1f}% cross the boundary "
+          "(look-alike confusions such as 4/9 or 3/5 straddle it too).", "",
           "Top confusions (true -> predicted): " + ", ".join(
               f"{t['true']}->{t['predicted']} ({t['count']})" for t in res["top_confusions"]), "",
           f"| Map statistics over {len(sel)} flipped digits | Grad-CAM mass on digit | Gradient mass on digit | "
