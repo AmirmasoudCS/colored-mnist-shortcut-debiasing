@@ -106,8 +106,3 @@ spurious cue and should be backed by counterfactual tests.
 - The control uses grayscale images, themselves unseen inputs; the rho = 0.9 control rests on only 83 errors.
 - Maps explain the true class (and, in the variant, the wrong class); they were not tuned or
   selected, and the 10 digits shown are the first in dataset order.
-
-## Next
-
-Task 3.4: misspecification tests (change the shape cue and the colour cue on 1,000 test samples);
-then the mitigation methods on rho = 0.99.
