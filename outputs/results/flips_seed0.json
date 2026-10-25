@@ -1,0 +1,68 @@
+{
+  "n_digits": 10000,
+  "n_natural_correct": 9958,
+  "n_flipped": 164,
+  "flip_rate_among_natural_correct": 0.016469170516167905,
+  "digits_0_4_painted_green": {
+    "flipped": 75,
+    "natural_correct": 5126,
+    "rate": 0.01463129145532579
+  },
+  "digits_5_9_painted_red": {
+    "flipped": 89,
+    "natural_correct": 4832,
+    "rate": 0.01841887417218543
+  },
+  "wrong_answer_crosses_boundary": 0.9207317233085632,
+  "top_confusions": [
+    {
+      "true": 9,
+      "predicted": 4,
+      "count": 17
+    },
+    {
+      "true": 4,
+      "predicted": 9,
+      "count": 16
+    },
+    {
+      "true": 5,
+      "predicted": 3,
+      "count": 13
+    },
+    {
+      "true": 2,
+      "predicted": 8,
+      "count": 10
+    },
+    {
+      "true": 7,
+      "predicted": 1,
+      "count": 9
+    }
+  ],
+  "map_stats": {
+    "natural_true_class": {
+      "accuracy": 0.9999999403953552,
+      "digit_area_fraction": 0.17755258083343506,
+      "gradcam_mass_on_digit": 0.2616256773471832,
+      "gradient_mass_on_digit": 0.35897570848464966,
+      "gradient_share_own_colour_channel": 0.5412219166755676
+    },
+    "reversed_true_class": {
+      "accuracy": 0.0,
+      "digit_area_fraction": 0.17755258083343506,
+      "gradcam_mass_on_digit": 0.27037885785102844,
+      "gradient_mass_on_digit": 0.35773706436157227,
+      "gradient_share_own_colour_channel": 0.5320615172386169
+    },
+    "reversed_wrong_class": {
+      "accuracy": 0.9999999403953552,
+      "digit_area_fraction": 0.17755258083343506,
+      "gradcam_mass_on_digit": 0.2861489951610565,
+      "gradient_mass_on_digit": 0.36106711626052856,
+      "gradient_share_own_colour_channel": 0.5387135744094849
+    },
+    "n_digits_in_stats": 164
+  }
+}
