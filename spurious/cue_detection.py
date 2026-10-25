@@ -93,3 +93,119 @@ def plot_examples(split, path, n=8):
     fig.tight_layout()
     fig.savefig(path, dpi=130)
     plt.close(fig)
+
+
+# =====================================================================
+# Task 3.2 / 3.3: Gradient x Input saliency and Grad-CAM
+# =====================================================================
+def select_per_class(split, per_class=10):
+    """Indices of the first `per_class` samples of each digit class, ordered by class."""
+    y = split[1]
+    return torch.cat([torch.nonzero(y == k).squeeze(1)[:per_class] for k in range(10)])
+
+
+def input_gradients(model, x, target):
+    """Plain gradient and Gradient x Input of the target-class logit w.r.t. the input."""
+    model.eval()
+    x = x.clone().requires_grad_(True)
+    score = model(x).gather(1, target[:, None]).sum()
+    (g,) = torch.autograd.grad(score, x)
+    return g.detach(), (g * x).detach()
+
+
+def grad_cam(model, x, target):
+    """Grad-CAM on the last conv block (7x7), bilinearly up-sampled to 28x28 and
+    max-normalised per sample."""
+    model.eval()
+    feats = model.features(x)                                   # (B, 128, 7, 7)
+    score = model.head(feats).gather(1, target[:, None]).sum()
+    (grads,) = torch.autograd.grad(score, feats)
+    alpha = grads.mean(dim=(2, 3), keepdim=True)                # channel importance
+    cam = torch.relu((alpha * feats).sum(dim=1, keepdim=True)).detach()
+    cam = torch.nn.functional.interpolate(cam, size=28, mode="bilinear", align_corners=False)[:, 0]
+    return cam / (cam.flatten(1).max(dim=1).values[:, None, None] + 1e-12)
+
+
+def _norm01(m):
+    return m / (m.flatten(1).max(dim=1).values[:, None, None] + 1e-12)
+
+
+def attribute(model, x, y, c):
+    """Maps + summary statistics for a batch.
+    x: float (B, 3, 28, 28) on the model's device, y: true labels (the explained class),
+    c: colour of each image (0 red / 1 green)."""
+    g, gxi = input_gradients(model, x, y)
+    cam = grad_cam(model, x, y)
+    with torch.no_grad():
+        pred = model(x).argmax(dim=1)
+
+    mask = (x.max(dim=1).values > 0.1).float()                  # digit pixels
+    def on_digit(m):
+        return (m * mask).flatten(1).sum(1) / (m.flatten(1).sum(1) + 1e-12)
+
+    grad_map = g.abs().sum(dim=1)
+    ch = g.abs().flatten(2).sum(dim=2)                          # gradient mass per colour channel
+    ar = torch.arange(len(y), device=x.device)
+    own, other = ch[ar, c], ch[ar, 1 - c]
+    gabs = g.abs() / (g.abs().flatten(1).max(dim=1).values[:, None, None, None] + 1e-12)
+
+    stats = {
+        "accuracy": (pred == y).float().mean().item(),
+        "digit_area_fraction": mask.flatten(1).mean().item(),
+        "gradcam_mass_on_digit": on_digit(cam).mean().item(),
+        "gradient_mass_on_digit": on_digit(grad_map).mean().item(),
+        "gradient_share_own_colour_channel": (own / (own + other + 1e-12)).mean().item(),
+    }
+    maps = {
+        "img": x.permute(0, 2, 3, 1).cpu().numpy().clip(0, 1),
+        "gxi": _norm01(gxi.abs().max(dim=1).values).cpu().numpy(),
+        "grad_red": gabs[:, 0].cpu().numpy(),
+        "grad_green": gabs[:, 1].cpu().numpy(),
+        "cam": cam.cpu().numpy(),
+        "pred": pred.cpu().tolist(),
+        "y": y.cpu().tolist(),
+    }
+    return maps, stats
+
+
+def _overlay(img, cam):
+    heat = plt.cm.jet(cam)[..., :3]
+    return (0.5 * img + 0.5 * heat).clip(0, 1)
+
+
+def _plot_grid(rows, labels, titles, path, suptitle, cell=1.15):
+    """rows: list of (list_of_arrays, cmap); titles: {row_index: [titles per column]}."""
+    nr, nc = len(rows), len(rows[0][0])
+    fig, axes = plt.subplots(nr, nc, figsize=(cell * nc + 2.2, cell * nr + 0.9), squeeze=False)
+    for r, (arrs, cmap) in enumerate(rows):
+        for k, a in enumerate(arrs):
+            ax = axes[r][k]
+            ax.imshow(a, cmap=cmap, vmin=0, vmax=1)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            if r in titles:
+                ax.set_title(titles[r][k], fontsize=7)
+        axes[r][0].set_ylabel(labels[r], fontsize=7, rotation=0, ha="right", va="center")
+    fig.suptitle(suptitle, fontsize=10)
+    fig.tight_layout()
+    fig.savefig(path, dpi=140)
+    plt.close(fig)
+
+
+def plot_attribution(maps_by_cond, cols, saliency_path, gradcam_path, title):
+    """maps_by_cond: {'natural': maps, 'reversed': maps}; cols: sample indices to show."""
+    sal_rows, sal_labels, sal_titles = [], [], {}
+    cam_rows, cam_labels, cam_titles = [], [], {}
+    for cond, m in maps_by_cond.items():
+        pick = lambda key: [m[key][i] for i in cols]            # noqa: E731
+        ttl = [f"y={m['y'][i]} \u0177={m['pred'][i]}" for i in cols]
+        sal_titles[len(sal_rows)] = ttl
+        sal_rows += [(pick("img"), None), (pick("gxi"), "hot"),
+                     (pick("grad_red"), "hot"), (pick("grad_green"), "hot")]
+        sal_labels += [f"{cond}: image", f"{cond}: Grad\u00d7Input", f"{cond}: |grad| red ch.",
+                       f"{cond}: |grad| green ch."]
+        cam_titles[len(cam_rows)] = ttl
+        cam_rows += [(pick("img"), None), ([_overlay(m["img"][i], m["cam"][i]) for i in cols], None)]
+        cam_labels += [f"{cond}: image", f"{cond}: Grad-CAM"]
+    _plot_grid(sal_rows, sal_labels, sal_titles, saliency_path, f"Saliency - {title}")
+    _plot_grid(cam_rows, cam_labels, cam_titles, gradcam_path, f"Grad-CAM - {title}")
