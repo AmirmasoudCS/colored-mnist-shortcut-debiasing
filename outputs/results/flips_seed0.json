@@ -14,6 +14,10 @@
     "rate": 0.01841887417218543
   },
   "wrong_answer_crosses_boundary": 0.9207317233085632,
+  "control_gray_errors": {
+    "n_errors": 83,
+    "crosses_boundary": 0.7108433842658997
+  },
   "top_confusions": [
     {
       "true": 9,

@@ -6,7 +6,9 @@
 | digits 0-4 painted green | 916 | 5130 | 17.86 |
 | digits 5-9 painted red | 500 | 4834 | 10.34 |
 
-Wrong answer crosses the 0-4 / 5-9 boundary (follows the colour): 97.7% (about 55.6% if the wrong class were random).
+Wrong answer crosses the 0-4 / 5-9 boundary (follows the colour): 97.7%.
+
+Control: among the 195 errors this model makes on colour-free (grayscale) images, 70.8% cross the boundary (look-alike confusions such as 4/9 or 3/5 straddle it too).
 
 Top confusions (true -> predicted): 4->9 (264), 2->7 (120), 3->8 (115), 3->5 (98), 2->8 (78)
 
