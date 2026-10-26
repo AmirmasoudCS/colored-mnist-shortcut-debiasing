@@ -239,3 +239,64 @@ def plot_flips(nat, rev_true, rev_wrong, y, wrong, path, title):
               "reversed: Grad-CAM\n(wrong class \u0177)", "reversed: Grad\u00d7Input\n(wrong class \u0177)"]
     titles = {0: [f"true {y[i]}" for i in cols], 4: [f"\u0177 = {wrong[i]}" for i in cols]}
     _plot_grid(rows, labels, titles, path, title)
+
+
+# =====================================================================
+# Task 3.4: misspecification tests (change the shape cue and the colour cue)
+# =====================================================================
+def rotate90(x, y, c):
+    """Shape perturbation: rotate the digit by 90 degrees."""
+    return torch.rot90(x, 1, dims=(2, 3))
+
+
+def occlude_right_half(x, y, c):
+    """Shape perturbation: delete the right half of the image (part of the digit)."""
+    x = x.clone()
+    x[:, :, :, 14:] = 0
+    return x
+
+
+SHAPE_CONDITIONS = {"clean": None, "rot90": rotate90, "occlude_right_half": occlude_right_half}
+COLOUR_CONDITIONS = {"natural": natural_color, "reversed": anti_color, "grayscale": grayscale_max}
+
+
+def misspecification_tests(model, split, device, n=1000, seed=0):
+    """Accuracy for every (shape perturbation) x (colour condition) on n random test digits.
+
+    For natural / reversed colour we also report `follows_colour`: how often the predicted
+    group (0-4 vs 5-9) is the group the colour points to (green -> 5-9, red -> 0-4).
+    ~0.5 = the colour has no pull; ~1.0 = the model obeys the colour.
+    """
+    g = torch.Generator().manual_seed(seed)
+    idx = torch.randperm(len(split[1]), generator=g)[:n]
+    sub = (split[0][idx], split[1][idx], split[2][idx])
+    y = sub[1]
+    res = {"n": int(len(y))}
+    for sname, stf in SHAPE_CONDITIONS.items():
+        for cname, ctf in COLOUR_CONDITIONS.items():
+            def tf(x, yy, c, stf=stf, ctf=ctf):
+                if stf is not None:
+                    x = stf(x, yy, c)          # destroy / alter the shape first ...
+                return ctf(x, yy, c)           # ... then re-paint the colour
+            pred = predict_logits(model, sub, device, transform=tf).argmax(dim=1)
+            entry = {"acc": (pred == y).float().mean().item()}
+            if cname != "grayscale":
+                shown_green = (y >= 5) if cname == "natural" else (y < 5)
+                entry["follows_colour"] = ((pred >= 5) == shown_green).float().mean().item()
+            res[f"{sname}/{cname}"] = entry
+    return res
+
+
+def plot_misspec_examples(split, path, n=8):
+    """Visual check: first n digits under each shape perturbation, natural and reversed colour."""
+    x = split[0][:n].float().div(255.0)
+    y, c = split[1][:n], split[2][:n]
+    rows, labels = [], []
+    for sname, stf in SHAPE_CONDITIONS.items():
+        xs = x if stf is None else stf(x, y, c)
+        for cname in ("natural", "reversed"):
+            xc = COLOUR_CONDITIONS[cname](xs, y, c)
+            rows.append(([xc[i].permute(1, 2, 0).clamp(0, 1).numpy() for i in range(n)], None))
+            labels.append(f"{sname}\n{cname}")
+    _plot_grid(rows, labels, {0: [f"label {int(y[i])}" for i in range(n)]}, path,
+               "Misspecification tests: shape perturbation x colour", cell=1.0)
