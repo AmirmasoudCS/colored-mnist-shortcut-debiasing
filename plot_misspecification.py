@@ -3,7 +3,9 @@
     python -m plot_misspecification --rhos 0.9 0.99 --seed 0
 
 Output: reports/figures/misspec_comparison_seed{S}.png
-Top row: accuracy. Bottom row: how often the predicted group (0-4 / 5-9) follows the colour.
+Top row: accuracy. Bottom row: how often the predicted group (0-4 / 5-9) follows the colour shown.
+A model that ignores colour gives natural + reversed = 100%, so the MEAN of the two bars (black
+diamond) is the colour pull: 50 = none, 100 = always obeys the colour.
 Whiskers = 95% binomial CI. The y-axis starts at 0.
 """
 import argparse
@@ -39,7 +41,7 @@ def main():
         n = res["n"]
         for r, (metric, cols, title, ref, ref_label) in enumerate([
                 ("acc", COLOURS, "accuracy (%)", 10, "random guessing"),
-                ("follows_colour", COLOURS[:2], "prediction follows the colour (%)", 50, "colour has no pull")]):
+                ("follows_colour", COLOURS[:2], "prediction follows the colour (%)", 50, "mean = 50: no colour pull")]):
             w = 0.8 / len(cols)
             for k, col in enumerate(cols):
                 vals = [100 * res[f"{s}/{col}"][metric] for s in SHAPES]
@@ -48,6 +50,13 @@ def main():
                 bars = ax[r][j].bar(xs, vals, w, yerr=errs, capsize=3, color=COLOUR_STYLE[col], label=col)
                 for b, v in zip(bars, vals):
                     ax[r][j].text(b.get_x() + b.get_width() / 2, v + 2.5, f"{v:.0f}", ha="center", fontsize=7)
+            if metric == "follows_colour":   # colour pull = mean of the two bars (50 = none)
+                means = [50 * (res[f"{s}/natural"][metric] + res[f"{s}/reversed"][metric]) for s in SHAPES]
+                ax[r][j].plot(range(len(SHAPES)), means, "D", color="black", markersize=8, zorder=5,
+                              label="mean of the two = colour pull")
+                for i, m in enumerate(means):
+                    ax[r][j].text(i, m - 7, f"{m:.0f}", ha="center", fontsize=8, fontweight="bold",
+                                  bbox=dict(facecolor="white", alpha=0.85, edgecolor="none", pad=1), zorder=6)
             ax[r][j].axhline(ref, color="gray", linestyle="--", linewidth=1)
             ax[r][j].text(len(SHAPES) - 0.55, ref + 1.5, ref_label, fontsize=7, color="black", ha="right",
                            bbox=dict(facecolor="white", alpha=0.85, edgecolor="none", pad=1))
