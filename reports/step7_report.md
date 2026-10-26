@@ -78,8 +78,3 @@ only far less colour-dependent.
 - Hiding the right half removes much of the digit (see Figure 1), so it is a severe, not subtle, change.
 - n = 1,000 per cell and a single seed; differences of a few points (e.g. 63 vs 59) are not reliable.
 - Grayscale images are themselves unseen inputs.
-
-## Next
-
-Task 4: bias mitigation methods on rho = 0.99 (at least two of reweighting, Group DRO, LfF, IRM,
-augmentation) with several seeds, compared in Table 3.
