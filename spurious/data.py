@@ -81,12 +81,14 @@ def build_datasets(root="./data", seed=DATA_SEED, rho=0.9):
     }
 
 
-def batches(split, bs, shuffle=False, device=None, generator=None):
+def batches(split, bs, shuffle=False, device=None, generator=None, return_index=False):
     """Yield (x, y, c) mini-batches from a (x, y, c) split.
 
     x is converted from uint8 to float32 in [0, 1] here, batch by batch, so the
     full dataset can stay in memory as uint8 (4x smaller).
     `generator` makes the shuffling reproducible.
+    return_index=True yields (x, y, c, idx) where idx are the positions of the batch's
+    samples in the split; methods that keep per-sample statistics (LfF) need it.
     """
     x, y, c = split
     n = y.shape[0]
@@ -95,5 +97,8 @@ def batches(split, bs, shuffle=False, device=None, generator=None):
         idx = order[i:i + bs]
         xb, yb, cb = x[idx].float().div(255.0), y[idx], c[idx]
         if device is not None:
-            xb, yb, cb = xb.to(device), yb.to(device), cb.to(device)
-        yield xb, yb, cb
+            xb, yb, cb, idx = xb.to(device), yb.to(device), cb.to(device), idx.to(device)
+        if return_index:
+            yield xb, yb, cb, idx
+        else:
+            yield xb, yb, cb
