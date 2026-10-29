@@ -171,24 +171,50 @@ Baselines for seeds 1 and 2 (`task1_train_baseline` and `task2_evaluate` with `-
 ## Project structure
 
 ```
-.
-├── data/                      MNIST (downloaded automatically)
-├── outputs/
-│   ├── models/                trained weights (.pth)
-│   └── results/               raw evaluation / history JSON files
-├── reports/
-│   ├── figures/               all figures used in the reports
-│   ├── tables/                generated tables (.md)
-│   └── step1_report.md ... step9_report.md
-├── spurious/                  data, models, evaluation, cue detection, methods, plotting, utils
-├── step1_check_data.py
-├── task1_train_baseline.py    task2_evaluate.py
-├── task3_counterfactual.py    task3_attribution.py    task3_flips.py    task3_misspecification.py
-├── task4_mitigation.py        make_table3.py
-├── plot_table1.py             plot_counterfactual.py  plot_misspecification.py
-├── requirements.txt           LICENSE
-└── README.md
+📁 
+├── 📁 data
+│   └── 📁 MNIST
+├── 📁 outputs
+│   ├── 📁 models
+│   └── 📁 results
+├── 📁 reports
+│   ├── 📁 figures
+│   ├── 📁 tables
+│   ├── 📘 step1_report.md
+│   ├── 📘 step2_report.md
+│   ├── 📘 step3_report.md
+│   ├── 📘 step4_report.md
+│   ├── 📘 step5_report.md
+│   ├── 📘 step6_report.md
+│   ├── 📘 step7_report.md
+│   ├── 📘 step8_report.md
+│   └── 📘 step9_report.md
+├── 📁 spurious
+│   ├── 🐍 __init__.py
+│   ├── 🐍 cue_detection.py
+│   ├── 🐍 data.py
+│   ├── 🐍 evaluation.py
+│   ├── 🐍 methods.py
+│   ├── 🐍 models.py
+│   ├── 🐍 plotting.py
+│   └── 🐍 utils.py
+├── ⚖️ LICENSE
+├── 🐍 make_table3.py
+├── 🐍 plot_counterfactual.py
+├── 🐍 plot_misspecification.py
+├── 🐍 plot_table1.py
+├── 📘 README.md
+├── 📝 requirements.txt
+├── 🐍 step1_check_data.py
+├── 🐍 task1_train_baseline.py
+├── 🐍 task2_evaluate.py
+├── 🐍 task3_attribution.py
+├── 🐍 task3_counterfactual.py
+├── 🐍 task3_flips.py
+├── 🐍 task3_misspecification.py
+└── 🐍 task4_mitigation.py
 ```
+> Generated usin [Tree Printer](https://github.com/AmirmasoudCS/Tree-Printer.git)
 
 ## References
 
@@ -202,4 +228,4 @@ Baselines for seeds 1 and 2 (`task1_train_baseline` and `task2_evaluate` with `-
 
 ## License
 
-See [`LICENSE`](LICENSE).
+See [LICENSE](LICENSE).
