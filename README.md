@@ -216,16 +216,6 @@ Baselines for seeds 1 and 2 (`task1_train_baseline` and `task2_evaluate` with `-
 ```
 > Generated usin [Tree Printer](https://github.com/AmirmasoudCS/Tree-Printer.git)
 
-## References
-
-- M. Arjovsky, L. Bottou, I. Gulrajani, D. Lopez-Paz. *Invariant Risk Minimization*, 2019 (origin of Colored MNIST).
-- S. Sagawa, P. W. Koh, T. B. Hashimoto, P. Liang. *Distributionally Robust Neural Networks for Group Shifts*, ICLR 2020 (Group DRO).
-- J. Nam, H. Cha, S. Ahn, J. Lee, J. Shin. *Learning from Failure: Training Debiased Classifier from Biased Classifier*, NeurIPS 2020 (LfF).
-- Z. Zhang, M. Sabuncu. *Generalized Cross Entropy Loss for Training Deep Neural Networks with Noisy Labels*, NeurIPS 2018 (GCE loss used by LfF).
-- R. R. Selvaraju et al. *Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization*, ICCV 2017.
-- R. Geirhos et al. *Shortcut Learning in Deep Neural Networks*, Nature Machine Intelligence, 2020.
-- Course handout and its listed references.
-
 ## License
 
 See [LICENSE](LICENSE).
